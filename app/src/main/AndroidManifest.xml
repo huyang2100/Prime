@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hu.yang.prime">
+
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".application.PrimeApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_card"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".Activity.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".Activity.DialogActivity" />
+        <activity android:name=".Activity.ToDoListActivity" />
+        <activity android:name=".Activity.SwitchMenuActivity" />
+        <activity android:name=".Activity.SwitchActivity" />
+        <activity android:name=".Activity.PagerActivity" />
+        <activity android:name=".Activity.SearchActivity" />
+        <activity
+            android:name=".Activity.AppLayoutActivity"
+            android:theme="@style/AppBarLayoutTheme" />
+        <activity android:name=".Activity.ToolBarActivity"></activity>
+        <activity android:name=".Activity.StatusBarColorActivity"></activity>
+    </application>
+
+</manifest>

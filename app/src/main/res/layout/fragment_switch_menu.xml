@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+    <ViewAnimator
+        android:id="@+id/va"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <fragment
+            android:id="@+id/frag_china"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:name="com.hu.yang.prime.Fragment.ChinaFragment"/>
+
+        <fragment
+            android:id="@+id/frag_usa"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:name="com.hu.yang.prime.Fragment.UsaFragment"/>
+
+        <fragment
+            android:id="@+id/frag_japan"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:name="com.hu.yang.prime.Fragment.JapanFragment"/>
+
+    </ViewAnimator>
+
+    <RadioGroup
+        android:id="@+id/rg"
+        android:checkedButton="@+id/rb_china"
+        android:background="@android:color/holo_orange_light"
+        android:orientation="horizontal"
+        android:padding="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <RadioButton
+            android:id="@+id/rb_china"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/china"
+            android:layout_height="wrap_content"/>
+        <RadioButton
+            android:id="@+id/rb_usa"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/usa"
+            android:layout_height="wrap_content"/>
+        <RadioButton
+            android:id="@+id/rb_japan"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/japan"
+            android:layout_height="wrap_content"/>
+    </RadioGroup>
+</LinearLayout>

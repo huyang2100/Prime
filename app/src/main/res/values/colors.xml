@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="notepad_paper">#EEF8E0A0</color>
+    <color name="notepad_lines">#FF0000FF</color>
+    <color name="notepad_margin">#90FF0000</color>
+    <color name="notepad_text">#AA0000FF</color>
+    <color name="light_dark">#ddd</color>
+    <color name="tab_txt_color">#333333</color>
+    <color name="tab_corner_color">#D0D0D0</color>
+    <color name="search_hot">#999999</color>
+    <color name="search_line">#F0F0F0</color>
+    <color name="search_bg">#6fbb7b</color>
+    <color name="logo_color">#ff509643</color>
+</resources>

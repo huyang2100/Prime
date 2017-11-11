@@ -1,0 +1,7 @@
+<resources>
+    <style name="AppBarLayoutTheme" parent="@style/AppTheme">
+        <!-- Customize your theme here. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+</resources>

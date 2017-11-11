@@ -1,0 +1,21 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/logo_color</item>
+        <item name="colorPrimaryDark">@color/logo_color</item>
+        <item name="colorAccent">@color/logo_color</item>
+        <item name="android:windowAnimationStyle">@style/enterandentrance</item>
+    </style>
+
+    <style name="AppBarLayoutTheme" parent="@style/AppTheme">
+        <!-- Customize your theme here. -->
+    </style>
+
+    <style name="enterandentrance" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:windowExitAnimation">@android:anim/fade_out</item>
+    </style>
+
+</resources>

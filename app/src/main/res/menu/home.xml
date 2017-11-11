@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_cloud"
+        android:icon="@drawable/ic_filter_drama_black_24dp"
+        android:title="menu_cloud"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/menu_setting"
+        android:title="Setting"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/menu_search"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="search"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        app:showAsAction="always|collapseActionView"/>
+</menu>

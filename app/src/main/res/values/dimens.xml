@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="notepad_margin">30dp</dimen>
+    <dimen name="notepad_padding">15dp</dimen>
+    <dimen name="width">100dp</dimen>
+    <dimen name="tab_bg_corner">30dp</dimen>
+    <dimen name="dp1">1dp</dimen>
+</resources>
