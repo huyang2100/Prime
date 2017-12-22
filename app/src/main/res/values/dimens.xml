@@ -5,4 +5,8 @@
     <dimen name="width">100dp</dimen>
     <dimen name="tab_bg_corner">30dp</dimen>
     <dimen name="dp1">1dp</dimen>
+
+    <dimen name="header_height">60dp</dimen>
+    <dimen name="footer_height">90dp</dimen>
+    <dimen name="footer_padding">10dp</dimen>
 </resources>

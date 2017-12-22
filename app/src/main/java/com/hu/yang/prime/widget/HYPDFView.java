@@ -1,6 +1,5 @@
 package com.hu.yang.prime.widget;
 
-import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -9,9 +8,9 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -22,9 +21,10 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Scroller;
-import android.widget.ViewAnimator;
 
 import com.foxit.gsdk.PDFException;
+import com.foxit.gsdk.pdf.DefaultAppearance;
+import com.foxit.gsdk.pdf.FontManager;
 import com.foxit.gsdk.pdf.PDFDocument;
 import com.foxit.gsdk.pdf.PDFPage;
 import com.foxit.gsdk.pdf.PDFPath;
@@ -34,6 +34,7 @@ import com.foxit.gsdk.pdf.Progress;
 import com.foxit.gsdk.pdf.RenderContext;
 import com.foxit.gsdk.pdf.Renderer;
 import com.foxit.gsdk.pdf.annots.Annot;
+import com.foxit.gsdk.pdf.annots.FreeText;
 import com.foxit.gsdk.pdf.annots.Highlight;
 import com.foxit.gsdk.pdf.annots.Ink;
 import com.foxit.gsdk.pdf.annots.UnderLine;
@@ -47,14 +48,20 @@ import java.util.ArrayList;
 
 public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutListener, ScaleGestureDetector.OnScaleGestureListener {
     private static final String TAG = HYPDFView.class.getSimpleName();
-    private static final int COLOR_BACKGROUD = Color.WHITE;
-    private static final float MAX_SCALE = 5f;
-    private static final float MIN_SCALE = 1f;
-    private static float MID_SCALE = MAX_SCALE * 0.55f;
-    private static final long COLOR_INK = 0xfffc615d;
-    private static final float BORDER_WIDTH_INK = 5;
-    private static final long COLOR_UNDER_LINE = 0xff34c749;
-    private static final long COLOR_HIGHT_LIGHT = 0xffffe21d;
+    private static int COLOR_BACKGROUD = Color.WHITE;
+    private float maxScale = 6f;
+    private float minScale = 1f;
+    public float curScale = minScale;
+    private float midScale = maxScale * 0.55f;
+    public static ArrayList<RectF> hightLightRectFs;
+    private final float SCALE_BIGGER = 1.25f;
+    private final float SCALE_SMALLER = 0.75f;
+    public static int COLOR_INK = 0xfffc615d;
+    public static int BORDER_WIDTH_INK = 5;
+    public static int SIZE_FREETEXT = 5;
+    public static int COLOR_UNDER_LINE = 0xff34c749;
+    public static int COLOR_HIGHT_LIGHT = 0xffffe21d;
+    public static int COLOR_FREETEXT = 0x2bc3e9;
     private Bitmap bitmap;
     private Paint paint;
     private Matrix displayMatrix;
@@ -64,12 +71,11 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     private float pageWidth;
     private float pageHeight;
     private AsyncTask<Void, Void, Void> task;
-    private int lastVisibleBottom;
     public static ShowMode showMode = ShowMode.ViewPager;
     private int position;
     private ScaleGestureDetector scaleGestureDetector;
     private float[] displayMatrixValues;
-    private Matrix canvasMatrix;
+    //    private Matrix canvasMatrix;
     private boolean isDraging;
     private Bitmap initBitmap;
     private GestureDetector gestureDetector;
@@ -79,7 +85,6 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     private float startX;
     private float startY;
     private boolean isFiling;
-    private long startTime;
     public static boolean isEdited;
     public static EditMode editMode = EditMode.INK;
     private boolean isInValidInkEvent;
@@ -91,10 +96,41 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     private UnderLine underLine;
     private Highlight hightLight;
     private OnFreeTextEditModeLisenter onFreeTextEditLisenter;
+    public static final String ANNOT_FILTER = Annot.TYPE_HIGHLIGHT + "," + Annot.TYPE_UNDERLINE + "," + Annot.TYPE_INK + "," + Annot.TYPE_FREETEXT + "," + Annot.TYPE_PSI;
+    private OnAddAnnotLisenter onAddAnnotLisenter;
+    private Paint hightLightPaint;
+    private OnScaleListener scaleListener;
 
-    public void setBitmap(Bitmap bitmapCache) {
-        this.bitmap = bitmapCache;
+    public void setDisplayMatrix(Matrix displayMatrix) {
+        this.displayMatrix = displayMatrix;
+    }
+
+    public void setPageWH(float width, float height) {
+        pageWidth = width;
+        pageHeight = height;
+    }
+
+    public void setPage(PDFPage page) {
+        this.page = page;
+    }
+
+    public void update() {
+        isScaling = false;
+        isDraging = false;
+        isFiling = false;
         postInvalidate();
+    }
+
+    public Bitmap getBitmap() {
+        return bitmap;
+    }
+
+    public interface OnScaleListener {
+        void onScaleChange();
+    }
+
+    public void setOnScaleListener(OnScaleListener scaleListener) {
+        this.scaleListener = scaleListener;
     }
 
     public enum EditMode {
@@ -120,21 +156,13 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         init();
     }
 
-    public interface OnFreeTextEditModeLisenter {
-        void onFreeTextEditModeLisenter(MotionEvent event, float width, RectF matrixRectF);
-    }
-
-    public void setOnFreeTextEditLisenter(OnFreeTextEditModeLisenter onFreeTextEditLisenter) {
-        this.onFreeTextEditLisenter = onFreeTextEditLisenter;
-    }
-
     private void init() {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        lastVisibleBottom = getVisibleBottom();
+        hightLightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        hightLightPaint.setColor(Color.parseColor("#88ffff00"));
         scaleGestureDetector = new ScaleGestureDetector(getContext(), this);
         gestureDetector = new GestureDetector(getContext(), new GestureListener());
         displayMatrixValues = new float[9];
-        canvasMatrix = new Matrix();
         lastPointF = new PointF();
         scroller = new Scroller(getContext());
         border = new Annot.Border();
@@ -143,24 +171,40 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        Log.i(TAG, "onDraw: bitmap " + bitmap);
         if (bitmap == null) {
             paint.setColor(Color.WHITE);
             canvas.drawRect(0, 0, widgetWidth, widgetHeight, paint);
         } else {
-            if (showMode == ShowMode.ListView) {
-                canvas.drawBitmap(bitmap, getMatrix(), paint);
-            } else {
-                if (bitmap != null && initBitmap != null && displayMatrix != null) {
-                    canvas.clipRect(getMatrixRectF());
-                    canvas.drawBitmap(initBitmap, canvasMatrix, paint);
-                    if (isDraging || isScaling || isFiling) {
-                        canvas.drawBitmap(initBitmap, canvasMatrix, paint);
-                    } else {
-                        canvas.drawBitmap(bitmap, getMatrix(), paint);
+            canvas.clipRect(getMatrixRectF());
+            canvas.drawBitmap(bitmap, getMatrix(), paint);
+
+            if (hightLightRectFs != null && hightLightRectFs.size() > 0) {
+                for (int i = 0; i < hightLightRectFs.size(); i++) {
+                    RectF srcRectF = hightLightRectFs.get(i);
+                    RectF rect = convertRectF(srcRectF);
+                    if (rect != null) {
+                        canvas.drawRect(rect, hightLightPaint);
                     }
                 }
             }
         }
+    }
+
+    public void clearHightLightRectF() {
+        hightLightRectFs = null;
+        postInvalidate();
+    }
+
+
+    public RectF convertRectF(RectF srcRectF) {
+        if (displayMatrix == null) {
+            return null;
+        }
+
+        RectF destRectF = new RectF();
+        displayMatrix.mapRect(destRectF, srcRectF);
+        return destRectF;
     }
 
     class GestureListener extends GestureDetector.SimpleOnGestureListener {
@@ -183,7 +227,7 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                 minY = maxY = (int) startY;
             }
 
-            isFiling = true;
+//            isFiling = true;
             scroller.fling((int) startX, (int) startY, (int) velocityX, (int) velocityY, minX, maxX, minY, maxY);
             return true;
         }
@@ -194,18 +238,21 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
             final float targetScale;
 
             if (widgetWidth > widgetHeight) {
-                MID_SCALE = widgetWidth / (pageWidth * (widgetHeight / pageHeight));
+                midScale = widgetWidth / pageWidth * 1f;
             } else {
-                MID_SCALE = MAX_SCALE * 0.55f;
+                midScale = maxScale * 0.55f;
             }
 
             BigDecimal bigDecimal = new BigDecimal(curScale);
             curScale = bigDecimal.setScale(2, BigDecimal.ROUND_HALF_UP).floatValue();
-            Log.i(TAG, "onDoubleTap: curscale: " + curScale + " midscale " + MID_SCALE);
-            if (curScale < MID_SCALE) {
-                targetScale = MID_SCALE;
+
+            BigDecimal bigDecimal2 = new BigDecimal(midScale);
+            midScale = bigDecimal2.setScale(2, BigDecimal.ROUND_HALF_UP).floatValue();
+            Log.i(TAG, "onDoubleTap: curscale: " + curScale + " midscale " + midScale);
+            if (curScale < midScale) {
+                targetScale = midScale;
             } else {
-                targetScale = MIN_SCALE;
+                targetScale = minScale;
             }
 
             ValueAnimator animator = ValueAnimator.ofFloat(curScale, targetScale);
@@ -216,7 +263,9 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                     Log.i(TAG, "onAnimationUpdate: " + animatedValue);
                     scale(animatedValue / getCurScale(), e.getX(), e.getY());
                     if (animatedValue == targetScale) {
-                        renderBitmap();
+                        if (scaleListener != null) {
+                            scaleListener.onScaleChange();
+                        }
                     }
                 }
             });
@@ -225,26 +274,39 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         }
     }
 
+    private Handler handler = new Handler();
+
     @Override
     public void computeScroll() {
         if (scroller.computeScrollOffset()) {
+            isFiling = true;
             int currX = scroller.getCurrX();
             int currY = scroller.getCurrY();
             move(currX - startX, currY - startY);
             startX = currX;
             startY = currY;
             postInvalidate();
+            Log.i(TAG, "computeScroll: 0");
 
             if (scroller.isFinished()) {
-                isFiling = false;
-                isDraging = false;
-                renderBitmap();
+//                renderBitmap();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        renderBitmap();
+                    }
+                }, 100);
+                Log.i(TAG, "computeScroll: 1");
             } else {
+                Log.i(TAG, "computeScroll: 2");
                 isFiling = true;
             }
         } else {
-            isFiling = false;
+            Log.i(TAG, "computeScroll: 3");
+//            isFiling = false;
         }
+        Log.i(TAG, "computeScroll: 4");
+//        isFiling = false;
     }
 
 
@@ -266,6 +328,10 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     }
 
     private boolean onEditEvent(MotionEvent event) {
+        if (onAddAnnotLisenter != null) {
+            onAddAnnotLisenter.onAddAnnot();
+        }
+
         switch (editMode) {
             case INK:
                 onInkEvent(event);
@@ -281,6 +347,22 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                 break;
         }
         return false;
+    }
+
+    public interface OnFreeTextEditModeLisenter {
+        void onFreeTextEditModeLisenter(MotionEvent event, float width, RectF matrixRectF, HYPDFView hypdfView);
+    }
+
+    public void setOnFreeTextEditLisenter(OnFreeTextEditModeLisenter onFreeTextEditLisenter) {
+        this.onFreeTextEditLisenter = onFreeTextEditLisenter;
+    }
+
+    public interface OnAddAnnotLisenter {
+        void onAddAnnot();
+    }
+
+    public void setOnAddAnnotLisenter(OnAddAnnotLisenter onAddAnnotLisenter) {
+        this.onAddAnnotLisenter = onAddAnnotLisenter;
     }
 
     private void onFreeTextEvent(MotionEvent event) {
@@ -299,7 +381,37 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
             } else {
                 width = (matrixRectF.right - event.getX()) + (matrixRectF.right - widgetWidth);
             }
-            onFreeTextEditLisenter.onFreeTextEditModeLisenter(event, width, matrixRectF);
+            onFreeTextEditLisenter.onFreeTextEditModeLisenter(event, width, matrixRectF, this);
+        }
+    }
+
+    public void saveFreeText(float x, float y, String freetext) {
+        float[] dst = new float[2];
+        getContentMatrix().mapPoints(dst, new float[]{x, y});
+
+        RectF rectf = new RectF(dst[0] - 1, dst[1] + 1, dst[0] + 1, dst[1] - 1);
+
+        try {
+            page.loadAnnots();
+            FreeText freeTextAnnot = (FreeText) page.addAnnot(rectf, Annot.TYPE_FREETEXT, null, -1);
+
+
+            freeTextAnnot.setAlignment(0);
+            freeTextAnnot.setIntent(FreeText.INTENTNAME_FREETEXT_TYPEWRITER);
+            freeTextAnnot.setOpacity((float) 1.0);
+            DefaultAppearance defaultAppearance = new DefaultAppearance();
+            defaultAppearance.textColor = HYPDFView.COLOR_FREETEXT;
+            defaultAppearance.flags = DefaultAppearance.DA_TEXTCOLOR | DefaultAppearance.DA_FONT;
+            defaultAppearance.font = FontManager.createStandard(FontManager.STDFONT_COURIER);
+            defaultAppearance.fontSize = HYPDFView.SIZE_FREETEXT * 1.5f * 4.8f;
+            defaultAppearance.textMatrix = null;
+            freeTextAnnot.setDefaultAppearance(defaultAppearance);
+            freeTextAnnot.resetAppearance();
+            freeTextAnnot.setContents(freetext);
+            freeTextAnnot.resetAppearance();
+            renderPage();
+        } catch (PDFException e) {
+            e.printStackTrace();
         }
     }
 
@@ -518,7 +630,7 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (isInValidInkEvent) {
+                if (isInValidInkEvent || pdfPath == null) {
                     return;
                 }
 
@@ -538,7 +650,7 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                if (isInValidInkEvent) {
+                if (isInValidInkEvent || pdfPath == null) {
                     return;
                 }
 
@@ -549,6 +661,22 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                     e.printStackTrace();
                 }
                 break;
+        }
+    }
+
+    public void removeOneAnnot() {
+        if (page == null || !isHasAnnot()) {
+            return;
+        }
+        try {
+            page.loadAnnots();
+            Annot[] annots = page.getAllAnnotsByTabOrder(ANNOT_FILTER);
+            if (annots == null) {
+                return;
+            }
+            removeAnnot(annots[annots.length - 1]);
+        } catch (PDFException e) {
+            e.printStackTrace();
         }
     }
 
@@ -638,10 +766,10 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 if (!scroller.isFinished()) {
+                    isFiling = false;
                     scroller.forceFinished(true);
                 }
                 lastPointF.set(curPointF);
-                startTime = System.currentTimeMillis();
                 isDraging = true;
                 break;
             case MotionEvent.ACTION_MOVE:
@@ -653,12 +781,8 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                isDraging = false;
                 if (!isFiling) {
-                    isFiling = false;
-                    if (System.currentTimeMillis() - startTime > 200) {
-                        renderBitmap();
-                    }
+                    renderBitmap();
                 }
                 break;
         }
@@ -684,8 +808,6 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
             }
 
             displayMatrix.postTranslate(0, tranY);
-            canvasMatrix.postTranslate(0, tranY);
-            postInvalidate();
         }
 
         if (getMatrixRectF().width() > widgetWidth) {
@@ -706,8 +828,55 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
             }
 
             displayMatrix.postTranslate(tranX, 0);
-            canvasMatrix.postTranslate(tranX, 0);
-            postInvalidate();
+        }
+
+        renderBitmap();
+    }
+
+    public void setBitmap(Bitmap bitmapCache) {
+        this.bitmap = bitmapCache;
+        postInvalidate();
+    }
+
+    public void zoomH(float curScale) {
+        scale(curScale / getCurScale(), widgetWidth / 2, 0);
+        renderBitmap();
+    }
+
+    public void zoom(float curScale) {
+        scale(curScale / getCurScale(), 0, 0);
+        renderBitmap();
+    }
+
+    public void zoomOut() {
+        Log.i(TAG, "zoomOut: curScale: " + getCurScale());
+        if (getCurScale() < maxScale) {
+            float scaleAfter = getCurScale() * SCALE_BIGGER;
+            if (scaleAfter >= maxScale) {
+                scale(maxScale / getCurScale(), widgetWidth / 2, widgetHeight / 2);
+            } else {
+                scale(SCALE_BIGGER, widgetWidth / 2, widgetHeight / 2);
+            }
+            if (scaleListener != null) {
+                scaleListener.onScaleChange();
+            }
+            new RenderBitmapTask().execute();
+        }
+    }
+
+    public void zoomIn() {
+        Log.i(TAG, "zoomIn: curScale: " + getCurScale());
+        if (getCurScale() > minScale) {
+            float scaleAfter = getCurScale() * SCALE_SMALLER;
+            if (scaleAfter <= minScale) {
+                scale(minScale / getCurScale(), widgetWidth / 2, widgetHeight / 2);
+            } else {
+                scale(SCALE_SMALLER, widgetWidth / 2, widgetHeight / 2);
+            }
+            if (scaleListener != null) {
+                scaleListener.onScaleChange();
+            }
+            new RenderBitmapTask().execute();
         }
     }
 
@@ -717,7 +886,7 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         float scaleFactor = detector.getScaleFactor();
         float scaleAfter = curScale * scaleFactor;
 
-        if (scaleAfter <= MAX_SCALE && scaleAfter >= MIN_SCALE) {
+        if (scaleAfter <= maxScale && scaleAfter >= minScale) {
             float focusX = detector.getFocusX();
             float focusY = detector.getFocusY();
             scale(scaleFactor, focusX, focusY);
@@ -725,58 +894,99 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         return true;
     }
 
+    public void moveAA(int x, int y) {
+//        if (displayMatrix == null || canvasMatrix == null) {
+//            return;
+//        }
+//        displayMatrix.postTranslate(x, y);
+//        canvasMatrix.postTranslate(x, y);
+//        if (getMatrixRectF().width() < widgetWidth) {
+//            float dx = (widgetWidth - getMatrixRectF().width()) / 2 - getMatrixRectF().left;
+//            displayMatrix.postTranslate(dx, 0);
+//            canvasMatrix.postTranslate(dx, 0);
+//        } else {
+//            if ((int) getMatrixRectF().left >= 0) {
+//                float dx = -getMatrixRectF().left;
+//                displayMatrix.postTranslate(dx, 0);
+//                canvasMatrix.postTranslate(dx, 0);
+//            }
+//            if (getMatrixRectF().right < widgetWidth) {
+//                float dx = widgetWidth - getMatrixRectF().right;
+//                displayMatrix.postTranslate(dx, 0);
+//                canvasMatrix.postTranslate(dx, 0);
+//            }
+//        }
+//
+//        if (getMatrixRectF().height() < widgetHeight) {
+//            float dy = (widgetHeight - getMatrixRectF().height()) / 2 - getMatrixRectF().top;
+//            displayMatrix.postTranslate(0, dy);
+//            canvasMatrix.postTranslate(0, dy);
+//        } else {
+//            if ((int) getMatrixRectF().top >= 0) {
+//                float dy = -getMatrixRectF().top;
+//                displayMatrix.postTranslate(0, dy);
+//                canvasMatrix.postTranslate(0, dy);
+//            }
+//            if (getMatrixRectF().bottom < widgetHeight) {
+//                float dy = widgetHeight - getMatrixRectF().bottom;
+//                displayMatrix.postTranslate(0, dy);
+//                canvasMatrix.postTranslate(0, dy);
+//            }
+//        }
+//        renderBitmap();
+    }
+
     private void scale(float scaleFactor, float focusX, float focusY) {
         isScaling = true;
         displayMatrix.postScale(scaleFactor, scaleFactor, focusX, focusY);
-        canvasMatrix.postScale(scaleFactor, scaleFactor, focusX, focusY);
 
         if (getMatrixRectF().width() < widgetWidth) {
             float dx = (widgetWidth - getMatrixRectF().width()) / 2 - getMatrixRectF().left;
             displayMatrix.postTranslate(dx, 0);
-            canvasMatrix.postTranslate(dx, 0);
         } else {
             if ((int) getMatrixRectF().left >= 0) {
                 float dx = -getMatrixRectF().left;
                 displayMatrix.postTranslate(dx, 0);
-                canvasMatrix.postTranslate(dx, 0);
             }
             if (getMatrixRectF().right < widgetWidth) {
                 float dx = widgetWidth - getMatrixRectF().right;
                 displayMatrix.postTranslate(dx, 0);
-                canvasMatrix.postTranslate(dx, 0);
             }
         }
 
         if (getMatrixRectF().height() < widgetHeight) {
             float dy = (widgetHeight - getMatrixRectF().height()) / 2 - getMatrixRectF().top;
             displayMatrix.postTranslate(0, dy);
-            canvasMatrix.postTranslate(0, dy);
         } else {
             if ((int) getMatrixRectF().top >= 0) {
                 float dy = -getMatrixRectF().top;
                 displayMatrix.postTranslate(0, dy);
-                canvasMatrix.postTranslate(0, dy);
             }
             if (getMatrixRectF().bottom < widgetHeight) {
                 float dy = widgetHeight - getMatrixRectF().bottom;
                 displayMatrix.postTranslate(0, dy);
-                canvasMatrix.postTranslate(0, dy);
             }
         }
-        postInvalidate();
+
+        curScale = getCurScale();
+        renderBitmap();
     }
 
     @Override
     public void onScaleEnd(ScaleGestureDetector detector) {
+        if (scaleListener != null) {
+            scaleListener.onScaleChange();
+        }
         renderBitmap();
     }
 
-    private void renderBitmap() {
-        new RenderBitmapTask().execute();
+    public float getCurScale() {
+        displayMatrix.getValues(displayMatrixValues);
+        return displayMatrixValues[Matrix.MSCALE_X];
     }
 
-    private float getCurScale() {
-        canvasMatrix.getValues(displayMatrixValues);
+    public float getCurScaleList() {
+        displayMatrix.getValues(displayMatrixValues);
         return displayMatrixValues[Matrix.MSCALE_X];
     }
 
@@ -794,8 +1004,11 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     }
 
     public boolean canScrollHorizontallyFroyo(int dx) {
-        RectF matrixRectF = getMatrixRectF();
+        if (displayMatrix == null) {
+            return false;
+        }
 
+        RectF matrixRectF = getMatrixRectF();
         if (matrixRectF.width() < widgetWidth) {
             return false;
         } else if (matrixRectF.right <= widgetWidth + 1 && dx < 0) {
@@ -814,27 +1027,15 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
     }
 
     @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        getViewTreeObserver().removeGlobalOnLayoutListener(this);
-    }
-
-    private int getVisibleBottom() {
-        Rect rect = new Rect();
-        getWindowVisibleDisplayFrame(rect);
-        return rect.bottom;
-    }
-
-    @Override
     public void onGlobalLayout() {
+        getViewTreeObserver().removeGlobalOnLayoutListener(this);
         if (showMode == ShowMode.ViewPager) {
             widgetWidth = getWidth();
             widgetHeight = getHeight();
-            int visibleBottom = getVisibleBottom();
-            if (task == null || lastVisibleBottom != visibleBottom) {
-                lastVisibleBottom = visibleBottom;
+
+
+            if (task == null) {
                 bitmap = null;
-                canvasMatrix.reset();
                 task = new ParsePageTask().execute();
             }
         }
@@ -857,15 +1058,158 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         }
     }
 
+    public boolean isHasAnnot() {
+        if (page == null) {
+            return false;
+        }
+
+        try {
+            page.loadAnnots();
+            return page.countAnnots(ANNOT_FILTER) != 0;
+        } catch (PDFException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    public void updateInitBitmap(int currentItem) {
+//        new RenderInitBitmapTask().execute(currentItem);
+
+        if (page != null) {
+            float scale, tranX, tranY;
+            int num = 1;
+            if (showMode == ShowMode.ViewPager) {
+                if (widgetWidth > widgetHeight) {
+                    scale = widgetHeight * 1.0f / pageHeight;
+                    tranX = (widgetWidth - pageWidth * scale) / 2;
+                    tranY = 0;
+
+                    num = 2;
+
+                } else {
+                    scale = widgetWidth * 1.0f / pageWidth;
+                    tranX = 0;
+                    tranY = (widgetHeight - pageHeight * scale) / 2;
+                    num = 1;
+                }
+            } else {
+                scale = widgetWidth * 1.0f / pageWidth;
+                tranX = 0;
+                tranY = 0;
+                num = 1;
+            }
+
+//            try {
+//                displayMatrix = page.getDisplayMatrix(0, 0, (int) pageWidth, (int) pageHeight, PDFPage.ROTATION_0);
+//            } catch (PDFException e) {
+//                e.printStackTrace();
+//            }
+//
+            //scale = 2f;
+
+//            displayMatrix.postScale(scale*num, scale*num);
+//            float ranX = (widgetWidth - pageWidth * scale*num) / 2;
+//            displayMatrix.postTranslate(ranX, tranY);
+//                postInvalidate();
+            //renderBitmap();
+            //
+            Bitmap bitmap = Bitmap.createBitmap((int) (widgetWidth * num), (int) (widgetHeight * num), Bitmap.Config.ARGB_8888);
+            bitmap.eraseColor(COLOR_BACKGROUD);
+            try {
+                Renderer renderer = Renderer.create(bitmap);
+                RenderContext renderContext = RenderContext.create();
+                Matrix matrix = page.getDisplayMatrix(0, 0, (int) pageWidth, (int) pageHeight, PDFPage.ROTATION_0);
+//                matrix.postTranslate(2, 2);
+                matrix.postScale(scale * num, scale * num);
+                float ranX = (widgetWidth - pageWidth * scale * num) / 2;
+                matrix.postTranslate(ranX, tranY);
+                renderContext.setMatrix(matrix);
+                renderContext.setFlags(RenderContext.FLAG_ANNOT);
+                Progress progress = page.startRender(renderContext, renderer, PDFPage.RENDERFLAG_NORMAL);
+                if (progress != null) {
+                    progress.continueProgress(0);
+                    progress.release();
+                }
+                renderContext.release();
+                renderer.release();
+            } catch (PDFException e) {
+                e.printStackTrace();
+            }
+            initBitmap = bitmap;
+
+//                displayMatrix.postScale(scale, scale);
+//            postInvalidate();
+//            renderBitmap();
+        }
+
+    }
+
+    class RenderInitBitmapTask extends AsyncTask<Integer, Void, Bitmap> {
+
+        @Override
+        protected Bitmap doInBackground(Integer... params) {
+            if (widgetWidth == 0 || widgetHeight == 0) {
+                return null;
+            }
+
+            Bitmap bitmap = Bitmap.createBitmap(widgetWidth, widgetHeight, Bitmap.Config.ARGB_8888);
+            bitmap.eraseColor(COLOR_BACKGROUD);
+
+            if (page != null) {
+                float scale, tranX, tranY;
+                if (showMode == ShowMode.ViewPager) {
+                    if (widgetWidth > widgetHeight) {
+                        scale = widgetHeight * 1.0f / pageHeight;
+                        tranX = (widgetWidth - pageWidth * scale) / 2;
+                        tranY = 0;
+                    } else {
+                        scale = widgetWidth * 1.0f / pageWidth;
+                        tranX = 0;
+                        tranY = (widgetHeight - pageHeight * scale) / 2;
+                    }
+                } else {
+                    scale = widgetWidth * 1.0f / pageWidth;
+                    tranX = 0;
+                    tranY = 0;
+                }
+
+                try {
+                    Matrix matrix = page.getDisplayMatrix(0, 0, (int) pageWidth, (int) pageHeight, PDFPage.ROTATION_0);
+                    matrix.postScale(scale, scale);
+                    matrix.postTranslate(tranX, tranY);
+                    Renderer renderer = Renderer.create(bitmap);
+                    RenderContext renderContext = RenderContext.create();
+                    renderContext.setMatrix(matrix);
+                    renderContext.setFlags(RenderContext.FLAG_ANNOT);
+                    Progress progress = page.startRender(renderContext, renderer, PDFPage.RENDERFLAG_NORMAL);
+                    if (progress != null) {
+                        progress.continueProgress(0);
+                        progress.release();
+                    }
+                    renderContext.release();
+                    renderer.release();
+                } catch (PDFException e) {
+                    e.printStackTrace();
+                }
+            }
+            return bitmap;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+//            HYPDFView.this.initBitmap = bitmap;
+        }
+    }
+
+
     class RenderBitmapTask extends AsyncTask<Void, Void, Bitmap> {
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            isScaling = false;
-            isDraging = false;
-            isFiling = false;
-            setAlpha(0f);
+//            setAlpha(0f);
         }
 
         @Override
@@ -900,35 +1244,53 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
                 return;
             }
 
+            isScaling = false;
+            isDraging = false;
+            isFiling = false;
 
-            animate().alpha(1).setDuration(350).setListener(new Animator.AnimatorListener() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    if (HYPDFView.this.bitmap == null) {
-                        HYPDFView.this.initBitmap = bitmap;
-                    }
-                    HYPDFView.this.bitmap = bitmap;
-                    Integer tag = (Integer) getTag();
-                    if (tag != null && tag == position) {
-                        postInvalidate();
-                    }
+//            if (HYPDFView.this.bitmap == null) {
+//                HYPDFView.this.initBitmap = bitmap;
+//            }
+            HYPDFView.this.bitmap = bitmap;
+            Integer tag = (Integer) getTag();
+            if (tag != null && tag == position) {
+                if (getCurScale() != curScale) {
+                    zoom(curScale);
                 }
+                postInvalidate();
+            }
 
-                @Override
-                public void onAnimationEnd(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationRepeat(Animator animation) {
-
-                }
-            }).start();
+//            animate().alpha(1).setDuration(10).setListener(new Animator.AnimatorListener() {
+//                @Override
+//                public void onAnimationStart(Animator animation) {
+//                    if (HYPDFView.this.bitmap == null) {
+//                        HYPDFView.this.initBitmap = bitmap;
+//                    }
+//                    HYPDFView.this.bitmap = bitmap;
+//                    Integer tag = (Integer) getTag();
+//                    if (tag != null && tag == position) {
+//                        if(getCurScale() != curScale){
+//                            zoom(curScale);
+//                        }
+//                        postInvalidate();
+//                    }
+//                }
+//
+//                @Override
+//                public void onAnimationEnd(Animator animation) {
+//
+//                }
+//
+//                @Override
+//                public void onAnimationCancel(Animator animation) {
+//
+//                }
+//
+//                @Override
+//                public void onAnimationRepeat(Animator animation) {
+//
+//                }
+//            }).start();
         }
     }
 
@@ -937,10 +1299,10 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         @Override
         protected Void doInBackground(Void... avoid) {
             try {
-                if (!page.isParsed()) {
+                if (page != null && !page.isParsed()) {
                     Progress progress = page.startParse(PDFPage.RENDERFLAG_NORMAL);
                     if (progress != null) {
-                        progress.continueProgress(0);
+                        progress.continueProgress(30);
                         progress.release();
                     }
                 }
@@ -953,33 +1315,61 @@ public class HYPDFView extends View implements ViewTreeObserver.OnGlobalLayoutLi
         @Override
         protected void onPostExecute(Void avoid) {
             super.onPostExecute(avoid);
-            float scale, tranX, tranY;
-
-            if (showMode == ShowMode.ViewPager) {
-                if (widgetWidth > widgetHeight) {
-                    scale = widgetHeight * 1.0f / pageHeight;
-                    tranX = (widgetWidth - pageWidth * scale) / 2;
-                    tranY = 0;
-                } else {
-                    scale = widgetWidth * 1.0f / pageWidth;
-                    tranX = 0;
-                    tranY = (widgetHeight - pageHeight * scale) / 2;
-                }
-            } else {
-                scale = widgetWidth * 1.0f / pageWidth;
-                tranX = 0;
-                tranY = 0;
-            }
 
             try {
-                displayMatrix = page.getDisplayMatrix(0, 0, (int) pageWidth, (int) pageHeight, PDFPage.ROTATION_0);
-            } catch (PDFException e) {
+                if (page != null) {
+                    float scale, tranX, tranY;
+                    if (showMode == ShowMode.ViewPager) {
+                        if (widgetWidth > widgetHeight) {
+                            scale = widgetHeight * 1.0f / pageHeight;
+                            tranX = (widgetWidth - pageWidth * scale) / 2;
+                            tranY = 0;
+                        } else {
+                            scale = widgetWidth * 1.0f / pageWidth;
+                            tranX = 0;
+                            tranY = (widgetHeight - pageHeight * scale) / 2;
+                        }
+                    } else {
+                        scale = widgetWidth * 1.0f / pageWidth;
+                        tranX = 0;
+                        tranY = 0;
+                    }
+
+                    minScale *= scale;
+                    maxScale *= scale;
+                    displayMatrix = page.getDisplayMatrix(0, 0, (int) pageWidth, (int) pageHeight, PDFPage.ROTATION_0);
+                    displayMatrix.postScale(scale, scale);
+                    displayMatrix.postTranslate(tranX, tranY);
+                    bitmap = Bitmap.createBitmap(widgetWidth, widgetHeight, Bitmap.Config.ARGB_8888);
+                    renderBitmap();
+                }
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-            displayMatrix.postScale(scale, scale);
-            displayMatrix.postTranslate(tranX, tranY);
+        }
+    }
+
+    private void renderBitmap() {
+        try {
+            isScaling = false;
+            bitmap.eraseColor(COLOR_BACKGROUD);
+            Renderer renderer = Renderer.create(bitmap);
+            RenderContext renderContext = RenderContext.create();
+            renderContext.setMatrix(displayMatrix);
+            renderContext.setFlags(RenderContext.FLAG_ANNOT);
+            Progress progress = page.startRender(renderContext, renderer, PDFPage.RENDERFLAG_NORMAL);
+            if (progress != null) {
+                int r = Progress.TOBECONTINUED;
+                while (r == Progress.TOBECONTINUED) {
+                    r = progress.continueProgress(30);
+                }
+                progress.release();
+            }
+            renderContext.release();
+            renderer.release();
             postInvalidate();
-            renderBitmap();
+        } catch (PDFException e) {
+            e.printStackTrace();
         }
     }
 

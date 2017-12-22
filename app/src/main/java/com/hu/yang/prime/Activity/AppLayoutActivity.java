@@ -1,5 +1,6 @@
 package com.hu.yang.prime.Activity;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -11,7 +12,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
+import com.hu.yang.prime.Fragment.BroadCastFragment;
 import com.hu.yang.prime.R;
 
 /**
@@ -51,4 +54,5 @@ public class AppLayoutActivity extends AppCompatActivity{
     public static void actionStart(Context context) {
         context.startActivity(new Intent(context,AppLayoutActivity.class));
     }
+
 }

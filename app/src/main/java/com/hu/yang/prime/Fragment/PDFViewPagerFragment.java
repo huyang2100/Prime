@@ -1,6 +1,7 @@
 package com.hu.yang.prime.Fragment;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Nullable;
@@ -130,7 +131,14 @@ public class PDFViewPagerFragment extends Fragment {
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
-            container.removeView((View) object);
+            HYPDFView hypdfView = (HYPDFView) object;
+            Bitmap bitmap = hypdfView.getBitmap();
+            if (bitmap != null && !bitmap.isRecycled()) {
+                bitmap.recycle();
+                bitmap = null;
+                System.gc();
+            }
+            container.removeView(hypdfView);
         }
     }
 

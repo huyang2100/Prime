@@ -15,4 +15,8 @@
     <color name="search_line">#F0F0F0</color>
     <color name="search_bg">#6fbb7b</color>
     <color name="logo_color">#ff509643</color>
+
+    <color name="transparent">#00000000</color>
+    <color name="background">#F7F4F0</color>
+    <color name="title_color">#333333</color>
 </resources>

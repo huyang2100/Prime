@@ -18,4 +18,9 @@
         <item name="android:windowExitAnimation">@android:anim/fade_out</item>
     </style>
 
+    <style name="popwin_anim_style">
+        <item name="android:windowEnterAnimation">@anim/menushow</item>
+        <item name="android:windowExitAnimation">@anim/menuhide</item>
+    </style>
+
 </resources>

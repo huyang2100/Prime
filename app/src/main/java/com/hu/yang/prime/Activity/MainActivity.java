@@ -9,10 +9,12 @@ import com.hu.yang.prime.Fragment.AppListFragment;
 import com.hu.yang.prime.Fragment.AppbarLayout2Fragment;
 import com.hu.yang.prime.Fragment.BasePageFragment;
 import com.hu.yang.prime.Fragment.BasicTranstionFragment;
+import com.hu.yang.prime.Fragment.BroadCastFragment;
 import com.hu.yang.prime.Fragment.CanvasFragment;
 import com.hu.yang.prime.Fragment.ContextualActionModeListFragment;
 import com.hu.yang.prime.Fragment.ContextualActionModeViewFragment;
 import com.hu.yang.prime.Fragment.DefaultLayoutAnimationsFragment;
+import com.hu.yang.prime.Fragment.DownLoadFragment;
 import com.hu.yang.prime.Fragment.ECGFragment;
 import com.hu.yang.prime.Fragment.FloatingContextMenuFragment;
 import com.hu.yang.prime.Fragment.FragmentPagerFragment;
@@ -36,14 +38,19 @@ import com.hu.yang.prime.Fragment.PDFViewPagerFragment;
 import com.hu.yang.prime.Fragment.PagerBarFragment;
 import com.hu.yang.prime.Fragment.PathsFragment;
 import com.hu.yang.prime.Fragment.PlayMusicFragment;
+import com.hu.yang.prime.Fragment.PopUpDownFragment;
 import com.hu.yang.prime.Fragment.PopUpWindowFragment;
 import com.hu.yang.prime.Fragment.ProgressFragment;
 import com.hu.yang.prime.Fragment.RecycleViewFragment;
 import com.hu.yang.prime.Fragment.ShapeCrossFragment;
+import com.hu.yang.prime.Fragment.StatusBarColor2Fragment;
 import com.hu.yang.prime.Fragment.SwitchMenuActivityFragment;
 import com.hu.yang.prime.Fragment.TestXmlFragment;
 import com.hu.yang.prime.Fragment.ToolBarFragment;
+import com.hu.yang.prime.Fragment.XListViewFragment;
+import com.hu.yang.prime.Fragment.XScrollViewFragment;
 import com.hu.yang.prime.R;
+import com.hu.yang.prime.widget.XScrollView;
 
 public class MainActivity extends AppCompatActivity implements FunctionsFragment.OnFunctionClickedLisenter{
 
@@ -148,6 +155,18 @@ public class MainActivity extends AppCompatActivity implements FunctionsFragment
             StatusBarColorActivity.actionStart(this);
         }else if(FunctionsFragment.FUN_TEST_XML.equals(function)){
             replaceFragment(new TestXmlFragment());
+        }else if(FunctionsFragment.FUN_DOWNLOAD.equals(function)){
+            replaceFragment(new DownLoadFragment());
+        }else if(FunctionsFragment.FUN_POPUP_DOWN.equals(function)){
+            replaceFragment(new PopUpDownFragment());
+        }else if(FunctionsFragment.FUN_BROADCAST_RECEIVER.equals(function)){
+            replaceFragment(new BroadCastFragment());
+        }else if(FunctionsFragment.FUN_X_LISTVIEW.equals(function)){
+            replaceFragment(new XListViewFragment());
+        }else if(FunctionsFragment.FUN_X_SCROLLVIEW.equals(function)){
+            replaceFragment(new XScrollViewFragment());
+        }else if(FunctionsFragment.FUN_STATUS_BAR_COLOR2.equals(function)){
+            replaceFragment(new StatusBarColor2Fragment());
         }
     }
 

@@ -1,9 +1,11 @@
 package com.hu.yang.prime.Fragment;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ListFragment;
+import android.support.v4.app.TaskStackBuilder;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -13,6 +15,12 @@ import android.widget.ListView;
  */
 
 public class FunctionsFragment extends ListFragment {
+    public static final String FUN_STATUS_BAR_COLOR2 = "x_status_bar_color2";
+    public static final String FUN_X_SCROLLVIEW = "x_scrollview";
+    public static final String FUN_X_LISTVIEW = "x_listview";
+    public static final String FUN_BROADCAST_RECEIVER = "broadcastreceiver";
+    public static final String FUN_POPUP_DOWN = "popup_down";
+    public static final String FUN_DOWNLOAD = "test_download";
     public static final String FUN_TEST_XML = "test_xml";
     public static final String FUN_STATUS_BAR_COLOR = "status_bar_color";
     public static final String FUN_FLOW_TABS = "flow_tabs";
@@ -55,6 +63,13 @@ public class FunctionsFragment extends ListFragment {
     public static final String FUN_PROGRESS = "progress";
     public static final String FUN_TOOLBAR = "toolbar";
     private String[] funcs = {
+            FUN_STATUS_BAR_COLOR2,
+            FUN_X_SCROLLVIEW,
+            FUN_X_LISTVIEW,
+            FUN_PDF_VIEWPAGER,
+            FUN_BROADCAST_RECEIVER,
+            FUN_POPUP_DOWN,
+            FUN_DOWNLOAD,
             FUN_TEST_XML,
             FUN_STATUS_BAR_COLOR,
             FUN_FLOW_TABS,
@@ -77,7 +92,6 @@ public class FunctionsFragment extends ListFragment {
             FUN_FRAGMENT_PLAYMUSIC,
             FUN_FRAGMENT_TEXTVIEW_LENGTH,
             FUN_PDF_LISTVIEW,
-            FUN_PDF_VIEWPAGER,
             FUN_PDF_VIEW,
             FUN_LISTVIEW_HEAVY,
             FUN_FLOATING_CONTEXT_MENU,
