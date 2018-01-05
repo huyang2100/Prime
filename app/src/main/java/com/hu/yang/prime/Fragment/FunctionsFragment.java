@@ -15,6 +15,9 @@ import android.widget.ListView;
  */
 
 public class FunctionsFragment extends ListFragment {
+    public static final String FUN_CROP_IMAGE = "crop_image";
+    public static final String FUN_SINA_WEIBO = "sina_weibo";
+    public static final String FUN_SWIPE_BACK_LAYOUT = "swipe_back_layout";
     public static final String FUN_STATUS_BAR_COLOR2 = "x_status_bar_color2";
     public static final String FUN_X_SCROLLVIEW = "x_scrollview";
     public static final String FUN_X_LISTVIEW = "x_listview";
@@ -63,6 +66,9 @@ public class FunctionsFragment extends ListFragment {
     public static final String FUN_PROGRESS = "progress";
     public static final String FUN_TOOLBAR = "toolbar";
     private String[] funcs = {
+            FUN_CROP_IMAGE,
+            FUN_SINA_WEIBO,
+            FUN_SWIPE_BACK_LAYOUT,
             FUN_STATUS_BAR_COLOR2,
             FUN_X_SCROLLVIEW,
             FUN_X_LISTVIEW,

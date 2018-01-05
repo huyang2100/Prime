@@ -1,10 +1,15 @@
 package com.hu.yang.prime.Activity;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 
+import com.hu.yang.prime.Constants;
 import com.hu.yang.prime.Fragment.AppListFragment;
 import com.hu.yang.prime.Fragment.AppbarLayout2Fragment;
 import com.hu.yang.prime.Fragment.BasePageFragment;
@@ -13,6 +18,7 @@ import com.hu.yang.prime.Fragment.BroadCastFragment;
 import com.hu.yang.prime.Fragment.CanvasFragment;
 import com.hu.yang.prime.Fragment.ContextualActionModeListFragment;
 import com.hu.yang.prime.Fragment.ContextualActionModeViewFragment;
+import com.hu.yang.prime.Fragment.CropImageFragment;
 import com.hu.yang.prime.Fragment.DefaultLayoutAnimationsFragment;
 import com.hu.yang.prime.Fragment.DownLoadFragment;
 import com.hu.yang.prime.Fragment.ECGFragment;
@@ -43,6 +49,7 @@ import com.hu.yang.prime.Fragment.PopUpWindowFragment;
 import com.hu.yang.prime.Fragment.ProgressFragment;
 import com.hu.yang.prime.Fragment.RecycleViewFragment;
 import com.hu.yang.prime.Fragment.ShapeCrossFragment;
+import com.hu.yang.prime.Fragment.SinaWeiboFragment;
 import com.hu.yang.prime.Fragment.StatusBarColor2Fragment;
 import com.hu.yang.prime.Fragment.SwitchMenuActivityFragment;
 import com.hu.yang.prime.Fragment.TestXmlFragment;
@@ -51,126 +58,173 @@ import com.hu.yang.prime.Fragment.XListViewFragment;
 import com.hu.yang.prime.Fragment.XScrollViewFragment;
 import com.hu.yang.prime.R;
 import com.hu.yang.prime.widget.XScrollView;
+import com.sina.weibo.sdk.WbSdk;
+import com.sina.weibo.sdk.auth.AuthInfo;
 
-public class MainActivity extends AppCompatActivity implements FunctionsFragment.OnFunctionClickedLisenter{
+import java.io.File;
+
+public class MainActivity extends AppCompatActivity implements FunctionsFragment.OnFunctionClickedLisenter {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if(savedInstanceState == null){
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_layout,new FunctionsFragment()).commit();
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_layout, new FunctionsFragment()).commit();
         }
+        WbSdk.install(this, new AuthInfo(this, Constants.APP_KEY, Constants.REDIRECT_URL, Constants.SCOPE));
+    }
 
+    @Override
+    public void startActivity(Intent intent) {
+        super.startActivity(intent);
+        overridePendingTransition(R.anim.slide_from_right, R.anim.slide_none);
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        overridePendingTransition(R.anim.slide_none, R.anim.slide_from_left);
     }
 
     @Override
     public void onFunctionClicked(String function) {
-        if(FunctionsFragment.FUN_DIALOG.equals(function)){
+        if (FunctionsFragment.FUN_DIALOG.equals(function)) {
             Intent intent = new Intent(this, DialogActivity.class);
             startActivity(intent);
-        }else if(FunctionsFragment.FUN_TO_DO_LIST.equals(function)){
+        } else if (FunctionsFragment.FUN_TO_DO_LIST.equals(function)) {
             Intent intent = new Intent(this, ToDoListActivity.class);
             startActivity(intent);
-        }else if(FunctionsFragment.FUN_POPUPWINDOW.equals(function)){
+        } else if (FunctionsFragment.FUN_POPUPWINDOW.equals(function)) {
             replaceFragment(new PopUpWindowFragment());
-        }else if(FunctionsFragment.FUN_SHAPE_CROSS.equals(function)){
+        } else if (FunctionsFragment.FUN_SHAPE_CROSS.equals(function)) {
             replaceFragment(new ShapeCrossFragment());
-        }else if(FunctionsFragment.FUN_CANVAS.equals(function)){
+        } else if (FunctionsFragment.FUN_CANVAS.equals(function)) {
             replaceFragment(new CanvasFragment());
-        }else if(FunctionsFragment.FUN_PATHS.equals(function)){
+        } else if (FunctionsFragment.FUN_PATHS.equals(function)) {
             replaceFragment(new PathsFragment());
-        }else if(FunctionsFragment.FUN_PATH_ECG.equals(function)){
+        } else if (FunctionsFragment.FUN_PATH_ECG.equals(function)) {
             replaceFragment(new ECGFragment());
-        }else if(FunctionsFragment.FUN_GRIDVIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_GRIDVIEW.equals(function)) {
             replaceFragment(new GridViewFragment());
-        }else if(FunctionsFragment.FUN_BASIC_TRANSITION.equals(function)){
+        } else if (FunctionsFragment.FUN_BASIC_TRANSITION.equals(function)) {
             replaceFragment(new BasicTranstionFragment());
-        }else if(FunctionsFragment.FUN_SWITCH_MENU.equals(function)){
+        } else if (FunctionsFragment.FUN_SWITCH_MENU.equals(function)) {
             replaceFragment(new SwitchMenuActivityFragment());
-        }else if(FunctionsFragment.FUN_PROGRESS.equals(function)){
+        } else if (FunctionsFragment.FUN_PROGRESS.equals(function)) {
             replaceFragment(new ProgressFragment());
-        }else if(FunctionsFragment.FUN_TOOLBAR.equals(function)){
+        } else if (FunctionsFragment.FUN_TOOLBAR.equals(function)) {
             replaceFragment(new ToolBarFragment());
-        }else if(FunctionsFragment.FUN_FLOATING_CONTEXT_MENU.equals(function)){
+        } else if (FunctionsFragment.FUN_FLOATING_CONTEXT_MENU.equals(function)) {
             replaceFragment(new FloatingContextMenuFragment());
-        }else if(FunctionsFragment.FUN_CONTEXTUAL_ACTION_MODE_LIST.equals(function)){
+        } else if (FunctionsFragment.FUN_CONTEXTUAL_ACTION_MODE_LIST.equals(function)) {
             replaceFragment(new ContextualActionModeListFragment());
-        }else if(FunctionsFragment.FUN_CONTEXTUAL_ACTION_MODE_VIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_CONTEXTUAL_ACTION_MODE_VIEW.equals(function)) {
             replaceFragment(new ContextualActionModeViewFragment());
-        }else if(FunctionsFragment.FUN_LISTVIEW_HEAVY.equals(function)){
+        } else if (FunctionsFragment.FUN_LISTVIEW_HEAVY.equals(function)) {
             replaceFragment(new ListViewHeavyFragment());
-        }else if(FunctionsFragment.FUN_PDF_VIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_PDF_VIEW.equals(function)) {
             replaceFragment(new PDFViewFragment());
-        }else if(FunctionsFragment.FUN_PDF_VIEWPAGER.equals(function)){
+        } else if (FunctionsFragment.FUN_PDF_VIEWPAGER.equals(function)) {
             replaceFragment(new PDFViewPagerFragment());
-        }else if(FunctionsFragment.FUN_PDF_LISTVIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_PDF_LISTVIEW.equals(function)) {
             replaceFragment(new PDFListViewFragment());
-        }else if(FunctionsFragment.FUN_FRAGMENT_SWITCH.equals(function)){
+        } else if (FunctionsFragment.FUN_FRAGMENT_SWITCH.equals(function)) {
             replaceFragment(new FragmentSwitchFragment());
-        }else if(FunctionsFragment.FUN_FRAGMENT_TEXTVIEW_LENGTH.equals(function)){
+        } else if (FunctionsFragment.FUN_FRAGMENT_TEXTVIEW_LENGTH.equals(function)) {
             replaceFragment(new FragmentTextViewLengthFragment());
-        }else if(FunctionsFragment.FUN_FRAGMENT_PLAYMUSIC.equals(function)){
+        } else if (FunctionsFragment.FUN_FRAGMENT_PLAYMUSIC.equals(function)) {
             replaceFragment(new PlayMusicFragment());
-        }else if(FunctionsFragment.FUN_LISTVIEW_APP.equals(function)){
+        } else if (FunctionsFragment.FUN_LISTVIEW_APP.equals(function)) {
             replaceFragment(new AppListFragment());
-        }else if(FunctionsFragment.FUN_DEFAULT_LAYOUT_ANIMATIONS.equals(function)){
+        } else if (FunctionsFragment.FUN_DEFAULT_LAYOUT_ANIMATIONS.equals(function)) {
             replaceFragment(new DefaultLayoutAnimationsFragment());
-        }else if(FunctionsFragment.FUN_GRIDLAYOUT_LOGIN.equals(function)){
+        } else if (FunctionsFragment.FUN_GRIDLAYOUT_LOGIN.equals(function)) {
             replaceFragment(new GridLayoutLoginFragment());
-        }else if(FunctionsFragment.FUN_GRIDLAYOUT_INDEX_XML.equals(function)){
+        } else if (FunctionsFragment.FUN_GRIDLAYOUT_INDEX_XML.equals(function)) {
             replaceFragment(new GridLayoutIndexFragment());
-        }else if(FunctionsFragment.FUN_GRIDLAYOUT_INDEX_CODE.equals(function)){
+        } else if (FunctionsFragment.FUN_GRIDLAYOUT_INDEX_CODE.equals(function)) {
             replaceFragment(new GridLayoutIndexCodeFragment());
-        }else if(FunctionsFragment.FUN_GRIDVIEW_INDEX.equals(function)){
+        } else if (FunctionsFragment.FUN_GRIDVIEW_INDEX.equals(function)) {
             replaceFragment(new GridViewIndexCodeFragment());
-        }else if(FunctionsFragment.FUN_FRAGMENT_PAGER.equals(function)){
+        } else if (FunctionsFragment.FUN_FRAGMENT_PAGER.equals(function)) {
             replaceFragment(new FragmentPagerFragment());
-        }else if(FunctionsFragment.FUN_BASEPAGE.equals(function)){
+        } else if (FunctionsFragment.FUN_BASEPAGE.equals(function)) {
             replaceFragment(new BasePageFragment());
-        }else if(FunctionsFragment.FUN_LISTVIEW_BUILD.equals(function)){
+        } else if (FunctionsFragment.FUN_LISTVIEW_BUILD.equals(function)) {
             replaceFragment(new ListViewBuildFragment());
-        }else if(FunctionsFragment.FUN_PAGER_BAR.equals(function)){
+        } else if (FunctionsFragment.FUN_PAGER_BAR.equals(function)) {
             replaceFragment(new PagerBarFragment());
-        }else if(FunctionsFragment.FUN_PAGER_BAR.equals(function)){
+        } else if (FunctionsFragment.FUN_PAGER_BAR.equals(function)) {
             replaceFragment(new PagerBarFragment());
-        }else if(FunctionsFragment.FUN_OKHTTP.equals(function)){
+        } else if (FunctionsFragment.FUN_OKHTTP.equals(function)) {
             replaceFragment(new OkHttpFragment());
-        }else if(FunctionsFragment.FUN_WEBVIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_WEBVIEW.equals(function)) {
             replaceFragment(new MyWebViewFragment());
-        }else if(FunctionsFragment.FUN_RECYCLEVIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_RECYCLEVIEW.equals(function)) {
             replaceFragment(new RecycleViewFragment());
-        }else if(FunctionsFragment.FUN_ITEM_DEL.equals(function)){
+        } else if (FunctionsFragment.FUN_ITEM_DEL.equals(function)) {
             replaceFragment(new ItemDelFragment());
-        }else if(FunctionsFragment.FUN_APPBAR_LAYOUT.equals(function)){
+        } else if (FunctionsFragment.FUN_APPBAR_LAYOUT.equals(function)) {
             replaceFragment(new AppbarLayout2Fragment());
-        }else if(FunctionsFragment.FUN_APPBAR_LAYOUT.equals(function)){
+        } else if (FunctionsFragment.FUN_APPBAR_LAYOUT.equals(function)) {
             replaceFragment(new AppbarLayout2Fragment());
-        }else if(FunctionsFragment.FUN_NOTIFICATIONS.equals(function)){
+        } else if (FunctionsFragment.FUN_NOTIFICATIONS.equals(function)) {
             replaceFragment(new NotificationsFragment());
-        }else if(FunctionsFragment.FUN_FLOW_TABS.equals(function)){
+        } else if (FunctionsFragment.FUN_FLOW_TABS.equals(function)) {
             SearchActivity.actionStart(this);
-        }else if(FunctionsFragment.FUN_STATUS_BAR_COLOR.equals(function)){
+        } else if (FunctionsFragment.FUN_STATUS_BAR_COLOR.equals(function)) {
             StatusBarColorActivity.actionStart(this);
-        }else if(FunctionsFragment.FUN_TEST_XML.equals(function)){
+        } else if (FunctionsFragment.FUN_TEST_XML.equals(function)) {
             replaceFragment(new TestXmlFragment());
-        }else if(FunctionsFragment.FUN_DOWNLOAD.equals(function)){
+        } else if (FunctionsFragment.FUN_DOWNLOAD.equals(function)) {
             replaceFragment(new DownLoadFragment());
-        }else if(FunctionsFragment.FUN_POPUP_DOWN.equals(function)){
+        } else if (FunctionsFragment.FUN_POPUP_DOWN.equals(function)) {
             replaceFragment(new PopUpDownFragment());
-        }else if(FunctionsFragment.FUN_BROADCAST_RECEIVER.equals(function)){
+        } else if (FunctionsFragment.FUN_BROADCAST_RECEIVER.equals(function)) {
             replaceFragment(new BroadCastFragment());
-        }else if(FunctionsFragment.FUN_X_LISTVIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_X_LISTVIEW.equals(function)) {
             replaceFragment(new XListViewFragment());
-        }else if(FunctionsFragment.FUN_X_SCROLLVIEW.equals(function)){
+        } else if (FunctionsFragment.FUN_X_SCROLLVIEW.equals(function)) {
             replaceFragment(new XScrollViewFragment());
-        }else if(FunctionsFragment.FUN_STATUS_BAR_COLOR2.equals(function)){
+        } else if (FunctionsFragment.FUN_STATUS_BAR_COLOR2.equals(function)) {
             replaceFragment(new StatusBarColor2Fragment());
+        } else if (FunctionsFragment.FUN_SWIPE_BACK_LAYOUT.equals(function)) {
+            SwipeBackLayoutActivity.actionStart(this);
+        } else if (FunctionsFragment.FUN_SINA_WEIBO.equals(function)) {
+            replaceFragment(new SinaWeiboFragment());
+        } else if (FunctionsFragment.FUN_CROP_IMAGE.equals(function)) {
+            replaceFragment(new CropImageFragment());
         }
     }
 
+    private void cropImage() {
+        Uri uri = Uri.fromFile(new File(Environment.DIRECTORY_PICTURES));
+        Intent intent = new Intent("com.android.camera.action.CROP");
+        intent.setDataAndType(uri, "image/*");
+        // crop=true是设置在开启的Intent中设置显示的VIEW可裁剪
+        intent.putExtra("crop", "true");
+        // 去黑边
+        intent.putExtra("scale", true);
+        intent.putExtra("scaleUpIfNeeded", true);
+        // aspectX aspectY 是宽高的比例，根据自己情况修改
+        intent.putExtra("aspectX", 3);
+        intent.putExtra("aspectY", 2);
+        // outputX outputY 是裁剪图片宽高像素
+        intent.putExtra("outputX", 600);
+        intent.putExtra("outputY", 400);
+        intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
+        //取消人脸识别功能
+        intent.putExtra("noFaceDetection", true);
+        //设置返回的uri
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+        //设置为不返回数据
+        intent.putExtra("return-data", true);
+        startActivityForResult(intent, 0);
+    }
+
     private void replaceFragment(Fragment fragment) {
-        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_layout,fragment).addToBackStack(null).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_layout, fragment).addToBackStack(null).commit();
     }
 }
