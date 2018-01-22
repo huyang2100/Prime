@@ -16,7 +16,7 @@ out
 /build
 
 #test
-*.java
+#*.java
 
 ###OSX###
 
@@ -54,7 +54,7 @@ Icon
 *.dex
 
 # Java class files
-*.class
+#*.class
 
 # Generated files
 bin/
